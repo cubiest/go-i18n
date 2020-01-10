@@ -1181,9 +1181,9 @@ zero = "{{.Count}} unread emails"
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			indir := mustTempDir("TestMergeCommandIn")
+			indir := mustTempDir("TestMergeWithLeanPrettifyCommandIn")
 			defer os.RemoveAll(indir)
-			outdir := mustTempDir("TestMergeCommandOut")
+			outdir := mustTempDir("TestMergeWithLeanPrettifyCommandOut")
 			defer os.RemoveAll(outdir)
 
 			infiles := make([]string, 0, len(testCase.inFiles))
@@ -1826,9 +1826,9 @@ zero = "{{.Count}} unread emails"
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			indir := mustTempDir("TestMergeCommandIn")
+			indir := mustTempDir("TestMergeWithFullPrettifyCommandIn")
 			defer os.RemoveAll(indir)
-			outdir := mustTempDir("TestMergeCommandOut")
+			outdir := mustTempDir("TestMergeWithFullPrettifyCommandOut")
 			defer os.RemoveAll(outdir)
 
 			infiles := make([]string, 0, len(testCase.inFiles))

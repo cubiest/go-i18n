@@ -37,8 +37,8 @@ appropriate name and pass it in to goi18n merge.
 Flags:
 
 	-pretty prettyLevel
-		In case you write the source language file yourself, but don't adhere strictly to the file format.
-		This command flag will prettify your source language localization.
+		During merge, update language source file to use table, even if there is only a key-value-pair.
+		When using "full", the source file will receive additionally the hash sum, like the target translations do.
 		Allowed values:
 			- [empty]
 			- lean

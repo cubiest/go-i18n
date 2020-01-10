@@ -26,12 +26,10 @@ If no files or paths are provided, it walks the current working directory.
 Flags:
 
 	-pretty prettyLevel
-		In case you write the source language file yourself, but don't adhere strictly to the file format.
-		This command flag will prettify your source language localization.
+		During extraction, don't generate simple key-value pairs, but rather put them into a table.
 		Allowed values:
 			- [empty]
 			- lean
-			- full
 		Default: [empty]
 
 	-sourceLanguage tag
@@ -71,6 +69,10 @@ func (ec *extractCommand) parse(args []string) error {
 	flags.StringVar(&ec.format, "format", "toml", "")
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	if ec.prettyLevel.Level == Full {
+		// the extract command does not generate a hash, therefore there is no need for `full`
+		return fmt.Errorf("value \"full\" is not supported for -pretty flag in extract command")
 	}
 
 	ec.paths = flags.Args()
