@@ -153,3 +153,38 @@ func (lt languageTag) Tag() language.Tag {
 	}
 	return tag
 }
+
+const (
+	// Lean prints key-value-pairs in active language source file with table
+	Lean int8 = 1 << iota
+	// Full means the hash will be printed additionally to `Lean` to the active language source file as well
+	Full
+)
+
+type pretty struct {
+	Level int8
+}
+
+func (p pretty) String() string {
+	switch p.Level {
+	case Lean:
+		return "lean"
+	case Full:
+		return "full"
+	}
+	return "undefined"
+}
+
+func (p *pretty) Set(value string) error {
+	lean := pretty{Lean}
+	full := pretty{Full}
+
+	if value == lean.String() {
+		*p = lean
+	} else if value == full.String() {
+		*p = full
+	} else {
+		return fmt.Errorf("invalid value %q for pretty flag", value)
+	}
+	return nil
+}

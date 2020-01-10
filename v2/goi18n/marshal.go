@@ -13,8 +13,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func writeFile(outdir, label string, langTag language.Tag, format string, messageTemplates map[string]*i18n.MessageTemplate, sourceLanguage bool) (path string, content []byte, err error) {
-	v := marshalValue(messageTemplates, sourceLanguage)
+func writeFile(outdir, label string, langTag language.Tag, format string, messageTemplates map[string]*i18n.MessageTemplate, prettyLevel pretty, sourceLanguage bool) (path string, content []byte, err error) {
+	v := marshalValue(messageTemplates, prettyLevel, sourceLanguage)
 	content, err = marshal(v, format)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to marshal %s strings to %s: %s", langTag, format, err)
@@ -23,18 +23,19 @@ func writeFile(outdir, label string, langTag language.Tag, format string, messag
 	return
 }
 
-func marshalValue(messageTemplates map[string]*i18n.MessageTemplate, sourceLanguage bool) interface{} {
+func marshalValue(messageTemplates map[string]*i18n.MessageTemplate, prettyLevel pretty, sourceLanguage bool) interface{} {
 	v := make(map[string]interface{}, len(messageTemplates))
 	for id, template := range messageTemplates {
-		if other := template.PluralTemplates[plural.Other]; sourceLanguage && len(template.PluralTemplates) == 1 &&
-			other != nil && template.Description == "" && template.LeftDelim == "" && template.RightDelim == "" {
+		if other := template.PluralTemplates[plural.Other]; prettyLevel == (pretty{}) && sourceLanguage &&
+			len(template.PluralTemplates) == 1 && other != nil && template.Description == "" &&
+			template.LeftDelim == "" && template.RightDelim == "" {
 			v[id] = other.Src
 		} else {
 			m := map[string]string{}
 			if template.Description != "" {
 				m["description"] = template.Description
 			}
-			if !sourceLanguage {
+			if !sourceLanguage || (sourceLanguage && prettyLevel != (pretty{}) && prettyLevel.Level == Full) {
 				m["hash"] = template.Hash
 			}
 			for pluralForm, template := range template.PluralTemplates {

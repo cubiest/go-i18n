@@ -25,6 +25,15 @@ If no files or paths are provided, it walks the current working directory.
 
 Flags:
 
+	-pretty prettyLevel
+		In case you write the source language file yourself, but don't adhere strictly to the file format.
+		This command flag will prettify your source language localization.
+		Allowed values:
+			- [empty]
+			- lean
+			- full
+		Default: [empty]
+
 	-sourceLanguage tag
 		The language tag of the extracted messages (e.g. en, en-US, zh-Hant-CN).
 		Default: en
@@ -45,6 +54,7 @@ type extractCommand struct {
 	sourceLanguage languageTag
 	outdir         string
 	format         string
+	prettyLevel    pretty
 }
 
 func (ec *extractCommand) name() string {
@@ -55,6 +65,7 @@ func (ec *extractCommand) parse(args []string) error {
 	flags := flag.NewFlagSet("extract", flag.ExitOnError)
 	flags.Usage = usageExtract
 
+	flags.Var(&ec.prettyLevel, "pretty", "")
 	flags.Var(&ec.sourceLanguage, "sourceLanguage", "en")
 	flags.StringVar(&ec.outdir, "outdir", ".", "")
 	flags.StringVar(&ec.format, "format", "toml", "")
@@ -108,7 +119,7 @@ func (ec *extractCommand) execute() error {
 			messageTemplates[m.ID] = mt
 		}
 	}
-	path, content, err := writeFile(ec.outdir, "active", ec.sourceLanguage.Tag(), ec.format, messageTemplates, true)
+	path, content, err := writeFile(ec.outdir, "active", ec.sourceLanguage.Tag(), ec.format, messageTemplates, ec.prettyLevel, true)
 	if err != nil {
 		return err
 	}

@@ -36,6 +36,15 @@ appropriate name and pass it in to goi18n merge.
 
 Flags:
 
+	-pretty prettyLevel
+		In case you write the source language file yourself, but don't adhere strictly to the file format.
+		This command flag will prettify your source language localization.
+		Allowed values:
+			- [empty]
+			- lean
+			- full
+		Default: [empty]
+
 	-sourceLanguage tag
 		Translate messages from this language (e.g. en, en-US, zh-Hant-CN)
  		Default: en
@@ -56,6 +65,7 @@ type mergeCommand struct {
 	sourceLanguage languageTag
 	outdir         string
 	format         string
+	prettyLevel    pretty
 }
 
 func (mc *mergeCommand) name() string {
@@ -66,6 +76,7 @@ func (mc *mergeCommand) parse(args []string) error {
 	flags := flag.NewFlagSet("merge", flag.ExitOnError)
 	flags.Usage = usageMerge
 
+	flags.Var(&mc.prettyLevel, "pretty", "")
 	flags.Var(&mc.sourceLanguage, "sourceLanguage", "en")
 	flags.StringVar(&mc.outdir, "outdir", ".", "")
 	flags.StringVar(&mc.format, "format", "toml", "")
@@ -89,7 +100,8 @@ func (mc *mergeCommand) execute() error {
 		}
 		inFiles[path] = content
 	}
-	ops, err := merge(inFiles, mc.sourceLanguage.Tag(), mc.outdir, mc.format)
+
+	ops, err := merge(inFiles, mc.prettyLevel, mc.sourceLanguage.Tag(), mc.outdir, mc.format)
 	if err != nil {
 		return err
 	}
@@ -110,7 +122,7 @@ type fileSystemOp struct {
 	deleteFiles []string
 }
 
-func merge(messageFiles map[string][]byte, sourceLanguageTag language.Tag, outdir, outputFormat string) (*fileSystemOp, error) {
+func merge(messageFiles map[string][]byte, prettyLevel pretty, sourceLanguageTag language.Tag, outdir, outputFormat string) (*fileSystemOp, error) {
 	unmerged := make(map[language.Tag][]map[string]*i18n.MessageTemplate)
 	sourceMessageTemplates := make(map[string]*i18n.MessageTemplate)
 	unmarshalFuncs := map[string]i18n.UnmarshalFunc{
@@ -118,10 +130,11 @@ func merge(messageFiles map[string][]byte, sourceLanguageTag language.Tag, outdi
 		"toml": toml.Unmarshal,
 		"yaml": yaml.Unmarshal,
 	}
+	// Generate message templates from source and target files.
 	for path, content := range messageFiles {
 		mf, err := i18n.ParseMessageFileBytes(content, path, unmarshalFuncs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load message file %s: %s", path, err)
+			return nil, fmt.Errorf("failed to load message file %q: %s", path, err)
 		}
 		templates := map[string]*i18n.MessageTemplate{}
 		for _, m := range mf.Messages {
@@ -145,14 +158,16 @@ func merge(messageFiles map[string][]byte, sourceLanguageTag language.Tag, outdi
 	}
 
 	if len(sourceMessageTemplates) == 0 {
-		return nil, fmt.Errorf("no messages found for source locale %s", sourceLanguageTag)
+		return nil, fmt.Errorf("no messages found for source locale %q", sourceLanguageTag)
 	}
 
+	// Join the lists elements per language tag in `unmerged` by language into `all` and
+	// add already translated message templates.
 	pluralRules := plural.DefaultRules()
 	all := make(map[language.Tag]map[string]*i18n.MessageTemplate)
 	all[sourceLanguageTag] = sourceMessageTemplates
 	for _, srcTemplate := range sourceMessageTemplates {
-		for dstLangTag, messageTemplates := range unmerged {
+		for dstLangTag, dstMessageTemplatesList := range unmerged {
 			if dstLangTag == sourceLanguageTag {
 				continue
 			}
@@ -179,8 +194,8 @@ func merge(messageFiles map[string][]byte, sourceLanguageTag language.Tag, outdi
 			}
 
 			// Check all unmerged message templates for this message id.
-			for _, messageTemplates := range messageTemplates {
-				unmergedTemplate := messageTemplates[srcTemplate.ID]
+			for _, dstMessageTemplates := range dstMessageTemplatesList {
+				unmergedTemplate := dstMessageTemplates[srcTemplate.ID]
 				if unmergedTemplate == nil {
 					continue
 				}
@@ -232,7 +247,7 @@ func merge(messageFiles map[string][]byte, sourceLanguageTag language.Tag, outdi
 
 	writeFiles := make(map[string][]byte, len(translate)+len(active))
 	for langTag, messageTemplates := range translate {
-		path, content, err := writeFile(outdir, "translate", langTag, outputFormat, messageTemplates, false)
+		path, content, err := writeFile(outdir, "translate", langTag, outputFormat, messageTemplates, prettyLevel, false)
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +255,7 @@ func merge(messageFiles map[string][]byte, sourceLanguageTag language.Tag, outdi
 	}
 	deleteFiles := []string{}
 	for langTag, messageTemplates := range active {
-		path, content, err := writeFile(outdir, "active", langTag, outputFormat, messageTemplates, langTag == sourceLanguageTag)
+		path, content, err := writeFile(outdir, "active", langTag, outputFormat, messageTemplates, prettyLevel, langTag == sourceLanguageTag)
 		if err != nil {
 			return nil, err
 		}

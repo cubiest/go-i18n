@@ -138,6 +138,7 @@ func addChildMessages(id string, data interface{}, messages []*Message) ([]*Mess
 	return messages, nil
 }
 
+// parsePath extracts and returns the language tag and file format used for unmarshalling from the given path.
 func parsePath(path string) (langTag, format string) {
 	formatStartIdx := -1
 	for i := len(path) - 1; i >= 0; i-- {
