@@ -53,12 +53,13 @@ func marshalValue(messageTemplates map[string]*i18n.MessageTemplate, sourceLangu
 
 func marshalValuePretty(messageTemplates map[string]*i18n.MessageTemplate, prettyLevel pretty, sourceLanguage bool) interface{} {
 	v := make(map[string]interface{}, len(messageTemplates))
+	printHash := !sourceLanguage || (sourceLanguage && prettyLevel.Level == Full)
 	for id, template := range messageTemplates {
 		m := map[string]string{}
 		if template.Description != "" {
 			m["description"] = template.Description
 		}
-		if !sourceLanguage || (sourceLanguage && prettyLevel.Level == Full) {
+		if printHash {
 			m["hash"] = template.Hash
 		}
 		for pluralForm, template := range template.PluralTemplates {
