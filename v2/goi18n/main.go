@@ -184,7 +184,7 @@ func (p *pretty) Set(value string) error {
 	} else if value == full.String() {
 		*p = full
 	} else {
-		return fmt.Errorf("invalid value %q for pretty flag", value)
+		return fmt.Errorf("expected value \"lean\" or \"full\"")
 	}
 	return nil
 }
